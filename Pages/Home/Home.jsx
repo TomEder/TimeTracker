@@ -32,13 +32,16 @@ const Home = ({navigation}) => {
       onPress={() => navigation.navigate('Project', {id: item.id})}>
       <View style={styles.listItem}>
         <Text style={styles.title}>{item.name}</Text>
+        <Text>
+          {item.earnings ? `${item.earnings.toFixed(1)} kr` : '0.0 kr'}
+        </Text>
       </View>
     </TouchableOpacity>
   );
 
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>Home</Text>
+      <Text style={styles.header}>Billy the app</Text>
       <FlatList
         data={projects}
         keyExtractor={item => item.id.toString()}
@@ -55,7 +58,7 @@ const Home = ({navigation}) => {
 export default Home;
 
 const styles = StyleSheet.create({
-  container: {flex: 1, padding: 16},
+  container: {flex: 1, padding: 16, marginTop: 50},
   header: {fontSize: 24, textAlign: 'center', marginBottom: 20},
   listItem: {padding: 16, borderBottomWidth: 1, borderBottomColor: '#ccc'},
   title: {fontSize: 16},

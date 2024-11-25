@@ -16,14 +16,14 @@ const projectsSlice = createSlice({
       state.projects.push(action.payload);
       AsyncStorage.setItem('projects', JSON.stringify(state.projects)); // Persist to AsyncStorage
     },
-    updateProject(state, action) {
+    updateProject: (state, action) => {
       const index = state.projects.findIndex(
         proj => proj.id === action.payload.id,
       );
       if (index !== -1) {
         state.projects[index] = {...state.projects[index], ...action.payload};
-        AsyncStorage.setItem('projects', JSON.stringify(state.projects)); // Persist updates
       }
+      AsyncStorage.setItem('projects', JSON.stringify(state.projects));
     },
     deleteProject(state, action) {
       state.projects = state.projects.filter(

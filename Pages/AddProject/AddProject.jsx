@@ -41,6 +41,7 @@ const AddProject = () => {
       todayTime: 0,
       weekTime: 0,
       monthTime: 0,
+      billingPeriods: [],
     };
 
     dispatch(addProject(newProject));

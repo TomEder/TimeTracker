@@ -46,6 +46,30 @@ const Project = ({route, navigation}) => {
   }, [timerActive, startTime]);
 
   const handleStartTimer = () => {
+    if (!project) return;
+
+    const billingPeriods = project.billingPeriods || []; // Ensure it exists
+    const activeBillingPeriod = billingPeriods.find(bp => !bp.billed);
+
+    if (!activeBillingPeriod) {
+      // Create a new billing period if none exists
+      const newBillingPeriod = {
+        id: Date.now(),
+        start: new Date().toISOString(),
+        end: null,
+        earnings: 0,
+        duration: 0,
+        billed: false, // Not billed yet
+      };
+
+      const updatedProject = {
+        ...project,
+        billingPeriods: [...billingPeriods, newBillingPeriod],
+      };
+
+      dispatch(updateProject(updatedProject));
+    }
+
     setStartTime(new Date());
     setTimerActive(true);
   };
@@ -54,12 +78,30 @@ const Project = ({route, navigation}) => {
     setTimerActive(false);
 
     if (project) {
+      const hoursWorked = timeElapsed / 3600;
+      const earnings = hoursWorked * project.payPerHour;
+
+      const updatedBillingPeriods = project.billingPeriods.map(bp => {
+        if (!bp.billed) {
+          // Update the active billing period
+          const duration = (bp.duration || 0) + timeElapsed;
+          return {
+            ...bp,
+            earnings: (bp.earnings || 0) + earnings,
+            duration,
+          };
+        }
+        return bp;
+      });
+
       const updatedProject = {
         ...project,
         lastSession: timeElapsed,
         todayTime: (project.todayTime || 0) + timeElapsed,
         weekTime: (project.weekTime || 0) + timeElapsed,
         monthTime: (project.monthTime || 0) + timeElapsed,
+        earnings: (project.earnings || 0) + earnings, // Add to total project earnings
+        billingPeriods: updatedBillingPeriods, // Update billing periods
       };
 
       dispatch(updateProject(updatedProject));
@@ -84,6 +126,10 @@ const Project = ({route, navigation}) => {
         },
       ],
     );
+  };
+
+  const handleBillingPeriodsPress = () => {
+    navigation.navigate('BillingPeriods', {projectId: id});
   };
 
   const formatTime = totalSeconds => {
@@ -137,9 +183,19 @@ const Project = ({route, navigation}) => {
         <Text style={styles.stat}>
           This Month: {formatTime(project.monthTime || 0)}
         </Text>
+        <Text style={styles.stat}>
+          This billing period: {formatTime(project.BpTime || 0)}
+        </Text>
       </View>
 
       {/* Actions */}
+      <TouchableOpacity
+        onPress={handleBillingPeriodsPress}
+        style={styles.billingPeriodButton}>
+        <Text style={styles.billingPeriodButtonText}>
+          See all billing periods
+        </Text>
+      </TouchableOpacity>
       <TouchableOpacity
         onPress={handleDeleteProject}
         style={styles.deleteButton}>
@@ -154,7 +210,7 @@ export default Project;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingTop: 100,
+    paddingTop: 50,
     padding: 20,
   },
   loadingContainer: {
@@ -201,5 +257,18 @@ const styles = StyleSheet.create({
   deleteButtonText: {
     fontSize: 16,
     fontWeight: 'bold',
+    color: 'white',
+  },
+  billingPeriodButton: {
+    backgroundColor: 'blue',
+    padding: 15,
+    marginBottom: 10,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  billingPeriodButtonText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: 'white',
   },
 });
