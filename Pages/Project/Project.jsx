@@ -7,59 +7,30 @@ import {
   StyleSheet,
   ActivityIndicator,
 } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import {useSelector, useDispatch} from 'react-redux';
+import {updateProject, deleteProject} from '../../features/projectSlice';
 import ProjectHeader from './ProjectHeader';
 
 const Project = ({route, navigation}) => {
   const {id} = route.params; // Get project ID from navigation params
-  const [project, setProject] = useState(null);
+  const dispatch = useDispatch();
+  const project = useSelector(state =>
+    state.projects.projects.find(proj => proj.id === id),
+  ); // Select the project from Redux store
+
   const [loading, setLoading] = useState(true);
   const [timerActive, setTimerActive] = useState(false);
   const [timeElapsed, setTimeElapsed] = useState(0);
   const [startTime, setStartTime] = useState(null);
 
-  // Fetch project data from AsyncStorage
   useEffect(() => {
-    const fetchProject = async () => {
-      try {
-        const storedProjects = await AsyncStorage.getItem('projects');
-        const projects = storedProjects ? JSON.parse(storedProjects) : [];
-        const currentProject = projects.find(proj => proj.id === id);
-
-        if (!currentProject) {
-          Alert.alert('Error', 'Project not found');
-          navigation.goBack();
-          return;
-        }
-
-        setProject(currentProject);
-      } catch (error) {
-        console.error('Error fetching project:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchProject();
-  }, [id, navigation]);
-
-  // Update project in AsyncStorage
-  const updateProject = async updatedProject => {
-    try {
-      const storedProjects = await AsyncStorage.getItem('projects');
-      const projects = storedProjects ? JSON.parse(storedProjects) : [];
-
-      const projectIndex = projects.findIndex(proj => proj.id === id);
-      if (projectIndex !== -1) {
-        projects[projectIndex] = updatedProject;
-        await AsyncStorage.setItem('projects', JSON.stringify(projects));
-      }
-
-      setProject(updatedProject);
-    } catch (error) {
-      console.error('Error updating project:', error);
+    if (!project) {
+      Alert.alert('Error', 'Project not found');
+      navigation.goBack();
+      return;
     }
-  };
+    setLoading(false); // Simulate loading for effect
+  }, [project, navigation]);
 
   // Timer logic
   useEffect(() => {
@@ -82,19 +53,21 @@ const Project = ({route, navigation}) => {
   const handleStopTimer = () => {
     setTimerActive(false);
 
-    const updatedProject = {
-      ...project,
-      lastSession: timeElapsed,
-      todayTime: (project.todayTime || 0) + timeElapsed,
-      weekTime: (project.weekTime || 0) + timeElapsed,
-      monthTime: (project.monthTime || 0) + timeElapsed,
-    };
+    if (project) {
+      const updatedProject = {
+        ...project,
+        lastSession: timeElapsed,
+        todayTime: (project.todayTime || 0) + timeElapsed,
+        weekTime: (project.weekTime || 0) + timeElapsed,
+        monthTime: (project.monthTime || 0) + timeElapsed,
+      };
 
-    updateProject(updatedProject);
-    setTimeElapsed(0);
+      dispatch(updateProject(updatedProject));
+      setTimeElapsed(0);
+    }
   };
 
-  const handleDeleteProject = async () => {
+  const handleDeleteProject = () => {
     Alert.alert(
       'Delete Project',
       'Are you sure you want to delete this project?',
@@ -103,22 +76,10 @@ const Project = ({route, navigation}) => {
         {
           text: 'Delete',
           style: 'destructive',
-          onPress: async () => {
-            try {
-              const storedProjects = await AsyncStorage.getItem('projects');
-              const projects = storedProjects ? JSON.parse(storedProjects) : [];
-              const filteredProjects = projects.filter(proj => proj.id !== id);
-              await AsyncStorage.setItem(
-                'projects',
-                JSON.stringify(filteredProjects),
-              );
-
-              Alert.alert('Success', 'Project deleted.');
-              navigation.goBack();
-            } catch (error) {
-              console.error('Error deleting project:', error);
-              Alert.alert('Error', 'Failed to delete the project.');
-            }
+          onPress: () => {
+            dispatch(deleteProject(id));
+            Alert.alert('Success', 'Project deleted.');
+            navigation.goBack();
           },
         },
       ],
@@ -140,6 +101,8 @@ const Project = ({route, navigation}) => {
     );
   }
 
+  const timerButtonColor = timerActive ? 'red' : 'green';
+
   return (
     <View style={styles.container}>
       <ProjectHeader project={project} onBack={() => navigation.goBack()} />
@@ -149,10 +112,10 @@ const Project = ({route, navigation}) => {
       <View style={styles.timerContainer}>
         <TouchableOpacity
           onPress={timerActive ? handleStopTimer : handleStartTimer}
-          style={[
-            styles.timerButton,
-            {backgroundColor: timerActive ? 'red' : 'green'},
-          ]}>
+          style={{
+            ...styles.timerButton,
+            backgroundColor: timerButtonColor,
+          }}>
           <Text style={styles.timerButtonText}>
             {timerActive ? 'Stop' : 'Start'}
           </Text>

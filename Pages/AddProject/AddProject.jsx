@@ -8,13 +8,15 @@ import {
   StyleSheet,
 } from 'react-native';
 import {useNavigation} from '@react-navigation/native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import {useDispatch} from 'react-redux';
+import {addProject} from '../../features/projectSlice';
 
 const AddProject = () => {
   const [projectName, setProjectName] = useState('');
   const [hourlyPay, setHourlyPay] = useState('');
   const [selectedColor, setSelectedColor] = useState(null);
 
+  const dispatch = useDispatch();
   const navigation = useNavigation();
 
   const colors = [
@@ -24,7 +26,7 @@ const AddProject = () => {
     {id: 4, colorCode: '#BE0707'},
   ];
 
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
     if (!projectName || !hourlyPay || !selectedColor) {
       Alert.alert('Error', 'Please fill in all fields and select a color.');
       return;
@@ -35,32 +37,29 @@ const AddProject = () => {
       name: projectName,
       payPerHour: Number(hourlyPay),
       bgColor: selectedColor,
+      lastSession: 0,
+      todayTime: 0,
+      weekTime: 0,
+      monthTime: 0,
     };
 
-    try {
-      const storedProjects = await AsyncStorage.getItem('projects');
-      const projects = storedProjects ? JSON.parse(storedProjects) : [];
+    dispatch(addProject(newProject));
 
-      projects.push(newProject);
-
-      await AsyncStorage.setItem('projects', JSON.stringify(projects));
-
-      Alert.alert('Success', 'Project added!', [
-        {text: 'OK', onPress: () => navigation.navigate('Home')},
-      ]);
-      console.log('Project created: ', newProject);
-    } catch (error) {
-      console.error('Error saving project', error);
-      Alert.alert('Failed to save project.');
-    }
+    Alert.alert('Success', 'Project added!', [
+      {text: 'OK', onPress: () => navigation.navigate('Home')},
+    ]);
   };
+
+  const getColorCircleStyle = colorId => ({
+    backgroundColor: colors.find(color => color.id === colorId)?.colorCode,
+    borderWidth: selectedColor === colorId ? 2 : 0,
+    borderColor: selectedColor === colorId ? '#000' : 'transparent',
+  });
 
   return (
     <View style={styles.container}>
-      {/* Header */}
       <Text style={styles.header}>Add a New Project</Text>
 
-      {/* Project Name Input */}
       <TextInput
         placeholder="Project Name"
         value={projectName}
@@ -68,7 +67,6 @@ const AddProject = () => {
         style={styles.input}
       />
 
-      {/* Hourly Pay Input */}
       <TextInput
         placeholder="Hourly Pay"
         value={hourlyPay}
@@ -77,27 +75,17 @@ const AddProject = () => {
         style={styles.input}
       />
 
-      {/* Color Selection */}
       <Text style={styles.label}>Select a Color:</Text>
       <View style={styles.colorsContainer}>
         {colors.map(color => (
           <TouchableOpacity
             key={color.id}
-            style={[
-              styles.colorCircle,
-              {
-                backgroundColor: color.colorCode,
-                borderWidth: selectedColor === color.id ? 2 : 0,
-                borderColor:
-                  selectedColor === color.id ? '#000' : 'transparent',
-              },
-            ]}
+            style={[styles.colorCircle, getColorCircleStyle(color.id)]}
             onPress={() => setSelectedColor(color.id)}
           />
         ))}
       </View>
 
-      {/* Submit Button */}
       <TouchableOpacity style={styles.button} onPress={handleSubmit}>
         <Text style={styles.buttonText}>Add Project</Text>
       </TouchableOpacity>

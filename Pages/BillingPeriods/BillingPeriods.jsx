@@ -1,9 +1,9 @@
 import React from 'react';
-import {View, Text, StyleSheet} from 'react-native';
+import {View, Text} from 'react-native';
 
 const BillingPeriods = () => {
   return (
-    <View style={styles.container}>
+    <View>
       <Text>BillingPeriods</Text>
     </View>
   );
