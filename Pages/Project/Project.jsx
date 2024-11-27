@@ -6,6 +6,7 @@ import {
   Alert,
   StyleSheet,
   ActivityIndicator,
+  FlatList,
 } from 'react-native';
 import {useSelector, useDispatch} from 'react-redux';
 import {updateProject, deleteProject} from '../../features/projectSlice';
@@ -31,6 +32,11 @@ const Project = ({route, navigation}) => {
     }
     setLoading(false); // Simulate loading for effect
   }, [project, navigation]);
+
+  const [tasks, setTasks] = useState([
+    {id: 1, name: 'Study through skillshare', completed: false},
+    {id: 2, name: 'Make new post about AC-D', completed: true},
+  ]);
 
   // Timer logic
   useEffect(() => {
@@ -149,6 +155,22 @@ const Project = ({route, navigation}) => {
 
   const timerButtonColor = timerActive ? 'red' : 'green';
 
+  const ToggleTaskCompleted = taskId => {
+    setTasks(prevTasks =>
+      prevTasks.map(task =>
+        task.id === taskId ? {...task, completed: !task.completed} : task,
+      ),
+    );
+  };
+  const renderTaskItem = ({item}) => (
+    <TouchableOpacity
+      style={[styles.taskItem, item.completed && {backgroundColor: '#d3ffd3'}]} // Optional styling for completed tasks
+      onPress={() => ToggleTaskCompleted(item.id)}>
+      <Text>{item.name}</Text>
+      <Text>Status: {item.completed ? 'Completed' : 'Not Completed'}</Text>
+    </TouchableOpacity>
+  );
+
   return (
     <View style={styles.container}>
       <ProjectHeader project={project} onBack={() => navigation.goBack()} />
@@ -171,21 +193,23 @@ const Project = ({route, navigation}) => {
 
       {/* Stats */}
       <View style={styles.statsContainer}>
-        <Text style={styles.stat}>
-          Last Session: {formatTime(project.lastSession || 0)}
-        </Text>
-        <Text style={styles.stat}>
-          Today: {formatTime(project.todayTime || 0)}
-        </Text>
-        <Text style={styles.stat}>
-          This Week: {formatTime(project.weekTime || 0)}
-        </Text>
-        <Text style={styles.stat}>
-          This Month: {formatTime(project.monthTime || 0)}
-        </Text>
-        <Text style={styles.stat}>
-          This billing period: {formatTime(project.BpTime || 0)}
-        </Text>
+        <View style={styles.statsItem}>
+          <Text style={styles.stat}>Time worked</Text>
+          <Text>{formatTime(project.totalTime || 0)}</Text>
+        </View>
+        <View style={styles.statsItem}>
+          <Text style={styles.stat}>Billing period:</Text>
+          <Text>{formatTime(project.BpTime || 0)}</Text>
+        </View>
+      </View>
+
+      <View style={styles.tasksContainer}>
+        <Text style={styles.tasksHeader}>Todays tasks</Text>
+        <FlatList
+          data={tasks}
+          keyExtractor={item => item.id.toString()}
+          renderItem={renderTaskItem}
+        />
       </View>
 
       {/* Actions */}
@@ -212,6 +236,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingTop: 50,
     padding: 20,
+    width: '100%',
   },
   loadingContainer: {
     flex: 1,
@@ -243,6 +268,17 @@ const styles = StyleSheet.create({
   },
   statsContainer: {
     marginBottom: 20,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingLeft: 30,
+    paddingRight: 30,
+  },
+  statsItem: {
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: 'black',
+    borderRadius: 8,
+    padding: 10,
   },
   stat: {
     fontSize: 16,
@@ -270,5 +306,23 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     color: 'white',
+  },
+  tasksContainer: {
+    marginBottom: 20,
+    alignItems: 'center',
+    width: 350,
+  },
+  tasksHeader: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 10,
+  },
+  taskItem: {
+    padding: 10,
+    borderWidth: 1,
+    borderColor: 'black',
+    borderRadius: 8,
+    marginBottom: 10,
+    width: '100%',
   },
 });
