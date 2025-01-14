@@ -17,9 +17,18 @@ const Home = ({navigation}) => {
 
   useEffect(() => {
     const fetchProjects = async () => {
-      const storedProjects = await AsyncStorage.getItem('projects');
-      if (storedProjects) {
-        dispatch(setProjects(JSON.parse(storedProjects)));
+      try {
+        const storedProjects = await AsyncStorage.getItem('projects');
+        if (storedProjects) {
+          const projects = JSON.parse(storedProjects).map(project => ({
+            ...project,
+            tasks: project.tasks || [], // Initialize tasks if missing
+          }));
+          dispatch(setProjects(projects));
+        }
+      } catch (error) {
+        Alert.alert('Error', 'Failed to load projects.');
+        console.error('Error fetching projects:', error);
       }
     };
 

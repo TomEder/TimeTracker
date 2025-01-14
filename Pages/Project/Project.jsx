@@ -25,18 +25,12 @@ const Project = ({route, navigation}) => {
   const [startTime, setStartTime] = useState(null);
 
   useEffect(() => {
-    if (!project) {
-      Alert.alert('Error', 'Project not found');
-      navigation.goBack();
-      return;
+    // Handle case when project is undefined due to deletion or invalid ID
+    if (!project && !loading) {
+      navigation.navigate('Home');
     }
-    setLoading(false); // Simulate loading for effect
-  }, [project, navigation]);
-
-  const [tasks, setTasks] = useState([
-    {id: 1, name: 'Study through skillshare', completed: false},
-    {id: 2, name: 'Make new post about AC-D', completed: true},
-  ]);
+    setLoading(false);
+  }, [project, navigation, loading]);
 
   // Timer logic
   useEffect(() => {
@@ -54,18 +48,17 @@ const Project = ({route, navigation}) => {
   const handleStartTimer = () => {
     if (!project) return;
 
-    const billingPeriods = project.billingPeriods || []; // Ensure it exists
+    const billingPeriods = project.billingPeriods || [];
     const activeBillingPeriod = billingPeriods.find(bp => !bp.billed);
 
     if (!activeBillingPeriod) {
-      // Create a new billing period if none exists
       const newBillingPeriod = {
         id: Date.now(),
         start: new Date().toISOString(),
         end: null,
         earnings: 0,
         duration: 0,
-        billed: false, // Not billed yet
+        billed: false,
       };
 
       const updatedProject = {
@@ -89,7 +82,6 @@ const Project = ({route, navigation}) => {
 
       const updatedBillingPeriods = project.billingPeriods.map(bp => {
         if (!bp.billed) {
-          // Update the active billing period
           const duration = (bp.duration || 0) + timeElapsed;
           return {
             ...bp,
@@ -106,8 +98,8 @@ const Project = ({route, navigation}) => {
         todayTime: (project.todayTime || 0) + timeElapsed,
         weekTime: (project.weekTime || 0) + timeElapsed,
         monthTime: (project.monthTime || 0) + timeElapsed,
-        earnings: (project.earnings || 0) + earnings, // Add to total project earnings
-        billingPeriods: updatedBillingPeriods, // Update billing periods
+        earnings: (project.earnings || 0) + earnings,
+        billingPeriods: updatedBillingPeriods,
       };
 
       dispatch(updateProject(updatedProject));
@@ -138,6 +130,32 @@ const Project = ({route, navigation}) => {
     navigation.navigate('BillingPeriods', {projectId: id});
   };
 
+  const handleSeeAllTasks = () => {
+    navigation.navigate('Tasks', {projectId: id});
+  };
+
+  const ToggleTaskCompleted = taskId => {
+    const updatedTasks = project.tasks.map(task =>
+      task.id === taskId ? {...task, completed: !task.completed} : task,
+    );
+
+    const updatedProject = {
+      ...project,
+      tasks: updatedTasks,
+    };
+
+    dispatch(updateProject(updatedProject));
+  };
+
+  const renderTaskItem = ({item}) => (
+    <TouchableOpacity
+      style={[styles.taskItem, item.completed && {backgroundColor: '#d3ffd3'}]}
+      onPress={() => ToggleTaskCompleted(item.id)}>
+      <Text>{item.name}</Text>
+      <Text>Status: {item.completed ? 'Completed' : 'Not Completed'}</Text>
+    </TouchableOpacity>
+  );
+
   const formatTime = totalSeconds => {
     const hours = Math.floor(totalSeconds / 3600);
     const minutes = Math.floor((totalSeconds % 3600) / 60);
@@ -154,27 +172,13 @@ const Project = ({route, navigation}) => {
   }
 
   const timerButtonColor = timerActive ? 'red' : 'green';
-
-  const ToggleTaskCompleted = taskId => {
-    setTasks(prevTasks =>
-      prevTasks.map(task =>
-        task.id === taskId ? {...task, completed: !task.completed} : task,
-      ),
-    );
-  };
-  const renderTaskItem = ({item}) => (
-    <TouchableOpacity
-      style={[styles.taskItem, item.completed && {backgroundColor: '#d3ffd3'}]} // Optional styling for completed tasks
-      onPress={() => ToggleTaskCompleted(item.id)}>
-      <Text>{item.name}</Text>
-      <Text>Status: {item.completed ? 'Completed' : 'Not Completed'}</Text>
-    </TouchableOpacity>
-  );
+  const highlightedTasks =
+    project?.tasks?.filter(task => task.highlighted) || [];
 
   return (
     <View style={styles.container}>
       <ProjectHeader project={project} onBack={() => navigation.goBack()} />
-      <Text style={styles.header}>{project.name}</Text>
+      <Text style={styles.header}>{project?.name || 'Unnamed Project'}</Text>
 
       {/* Timer */}
       <View style={styles.timerContainer}>
@@ -195,21 +199,27 @@ const Project = ({route, navigation}) => {
       <View style={styles.statsContainer}>
         <View style={styles.statsItem}>
           <Text style={styles.stat}>Time worked</Text>
-          <Text>{formatTime(project.totalTime || 0)}</Text>
+          <Text>{formatTime(project?.totalTime || 0)}</Text>
         </View>
         <View style={styles.statsItem}>
           <Text style={styles.stat}>Billing period:</Text>
-          <Text>{formatTime(project.BpTime || 0)}</Text>
+          <Text>{formatTime(project?.BpTime || 0)}</Text>
         </View>
       </View>
 
+      {/* Tasks */}
       <View style={styles.tasksContainer}>
-        <Text style={styles.tasksHeader}>Todays tasks</Text>
+        <Text style={styles.tasksHeader}>Highlighted Tasks</Text>
         <FlatList
-          data={tasks}
+          data={highlightedTasks}
           keyExtractor={item => item.id.toString()}
           renderItem={renderTaskItem}
         />
+        <TouchableOpacity
+          onPress={handleSeeAllTasks}
+          style={styles.billingPeriodButton}>
+          <Text style={styles.billingPeriodButtonText}>See all tasks</Text>
+        </TouchableOpacity>
       </View>
 
       {/* Actions */}
