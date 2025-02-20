@@ -13,11 +13,11 @@ import {updateProject, deleteProject} from '../../features/projectSlice';
 import ProjectHeader from './ProjectHeader';
 
 const Project = ({route, navigation}) => {
-  const {id} = route.params; // Get project ID from navigation params
+  const {id} = route.params;
   const dispatch = useDispatch();
   const project = useSelector(state =>
     state.projects.projects.find(proj => proj.id === id),
-  ); // Select the project from Redux store
+  );
 
   const [loading, setLoading] = useState(true);
   const [timerActive, setTimerActive] = useState(false);
@@ -25,14 +25,12 @@ const Project = ({route, navigation}) => {
   const [startTime, setStartTime] = useState(null);
 
   useEffect(() => {
-    // Handle case when project is undefined due to deletion or invalid ID
     if (!project && !loading) {
       navigation.navigate('Home');
     }
     setLoading(false);
   }, [project, navigation, loading]);
 
-  // Timer logic
   useEffect(() => {
     let interval;
     if (timerActive) {
